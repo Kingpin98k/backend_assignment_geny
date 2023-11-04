@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 const GlobaError = require("../utils/globalError");
 
 const handleCastErrorDB = (err) => {
@@ -19,49 +21,45 @@ const handleValidationErrorDB = (err) => {
 	return new GlobaError(message, 400);
 };
 
+//Both the errors while verifying the JWT
+const handleJsonWebTokenError = (err) =>
+	new GlobaError("Invalid token Please Login again !!", 401);
+
+const handleTokenExpiredError = (err) =>
+	new GlobaError("Token Expired Please Login again !!", 401);
+
 const sendError = (err, req, res) => {
-	//---------------->>API PART<<---------------------------
+	//Error handling for the API
 	if (req.originalUrl.startsWith("/api")) {
-		// Operational, trusted error: send message to client
-		if (err.isOperational) {
-			res.status(err.statusCode).json({
-				status: err.status,
-				error: err,
-				message: err.message,
-			});
-
-			// Programming or other unknown error: don't leak error details
-		} else {
-			// 1) Log error
-			console.error("ERROR 💥", err);
-
-			// 2) Send generic message
-			res.status(500).json({
-				status: "error",
-				message: "Something went very wrong!",
-			});
-		}
-	} //--------------------->>WEBSITE PART<<----------------------------
-	else {
-		// Operational, trusted error: send message to client
-		if (err.isOperational) {
-			res.status(err.statusCode).render("error", {
-				title: "Something Went Wrong !",
-				msg: err.message,
-			});
-
-			// Programming or other unknown error: don't leak error details
-		} else {
-			// 1) Log error
-			console.error("ERROR 💥", err);
-
-			// 2) Send generic message
-			res.status(err.statusCode).render("error", {
-				title: "Something Went Wrong !",
-				msg: "Please try again !!",
-			});
-		}
+		res.status(err.statusCode).json({
+			status: err.status,
+			error: err,
+			message: err.message,
+			stack: err.stack,
+		});
+	} else {
+		//Error handling for the RENDERED WEBSITE
+		res.status(err.statusCode).render("error", {
+			title: "Something Went Wrong !",
+			msg: err.message,
+		});
 	}
 };
 
-module.exports = (error, req, res, next) => {};
+module.exports = (error, req, res, next) => {
+	// console.log(err.stack);
+	//Sometimes some internal node errors may not have a status code
+	error.statusCode = error.statusCode || 500;
+	error.status = error.status || "error";
+
+	if (error.kind === "ObjectId") error = handleCastErrorDB(error);
+	if (error.code === 11000) error = handleDuplicateFieldsDB(error);
+	if (error._message === "Validation failed")
+		error = handleValidationErrorDB(error);
+	//JWT Verification Errors
+	if (error.name === "JsonWebTokenError")
+		error = handleJsonWebTokenError(error);
+	if (error.name === "TokenExpiredError")
+		error = handleTokenExpiredError(error);
+	sendError(error, req, res);
+};
