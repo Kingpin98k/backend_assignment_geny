@@ -62,15 +62,15 @@ exports.login = handleAsync(async (req, res, next) => {
 	const password = req.body.password;
 	//Check if both the email and passwords are present !!
 	if (!email || !password)
-		return next(new globalError("Enter both email and Password !!", 404));
+		return next(new GlobaError("Enter both email and Password !!", 404));
 
 	//Check if the input email and password are correct
 	const match = await User.findOne({ email: email }).select("+password"); //to select the password since it will not be selected implicitely
-	if (!match) return next(new globalError("Email not present !!", 404));
+	if (!match) return next(new GlobaError("Email not present !!", 404));
 
 	if (!(await match.comparePasswords(password, match.password)))
 		//using the instance method of user documents
-		return next(new globalError("Password Incorrect !!", 400));
+		return next(new GlobaError("Password Incorrect !!", 400));
 
 	//Sign and return the JWT
 	createSendToken(match, 201, res);

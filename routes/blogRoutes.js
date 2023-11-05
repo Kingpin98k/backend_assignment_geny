@@ -1,6 +1,7 @@
 const express = require("express");
 const blogController = require("../controllers/blogController");
 const authController = require("../controllers/authController");
+const commentRouter = require("./commentRoutes");
 
 const blogRouter = express.Router();
 
@@ -8,14 +9,16 @@ const blogRouter = express.Router();
 blogRouter.use(authController.protect);
 
 blogRouter
-	.route("/posts")
+	.route("/")
 	.get(blogController.getAllBlogs)
 	.post(blogController.createBlog);
 
 blogRouter
-	.route("/posts/:id")
+	.route("/:id")
 	.get(blogController.getOneBlog)
 	.put(blogController.updateBlog)
 	.delete(blogController.deleteBlog);
+
+blogRouter.use("/:id/comments", commentRouter);
 
 module.exports = blogRouter;

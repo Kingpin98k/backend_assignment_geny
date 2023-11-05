@@ -2,7 +2,7 @@ const handleAsync = require("../utils/handleAsync");
 // const GlobalError = require("../utils/globalError");
 const Blog = require("../models/blogModel");
 const GlobaError = require("../utils/globalError");
-const factory = require("./creatorFactory");
+// const factory = require("./creatorFactory");
 
 exports.createBlog = handleAsync(async (req, res, next) => {
 	req.body.author = req.user.id;
@@ -15,9 +15,21 @@ exports.createBlog = handleAsync(async (req, res, next) => {
 	});
 });
 
-exports.getAllBlogs = factory.getAll(Blog);
+exports.getAllBlogs = handleAsync(async (req, res, next) => {
+	const data = await Blog.find().populate({ path: "comments" });
+	res.status(200).json({
+		blogs: data,
+	});
+});
 
-exports.getOneBlog = factory.getOne(Blog);
+exports.getOneBlog = handleAsync(async (req, res, next) => {
+	const data = await Blog.findById(req.params.id).populate({
+		path: "comments",
+	});
+	res.status(200).json({
+		blogs: data,
+	});
+});
 
 exports.updateBlog = handleAsync(async (req, res, next) => {
 	const blog = await Blog.findById(req.params.id);
